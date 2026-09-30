@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from enricher import get_ip_geolocation
 
 LOG_FILE = "data/cowrie.json"
 
@@ -23,11 +23,14 @@ def parse_logs():
                 if event.get("eventid") not in IMPORTANT_EVENTS:
                     continue
                 
+                src_ip = event.get("src_ip")
+                geolocation = get_ip_geolocation(src_ip) if src_ip else None
+                
                 parsed_event = {
                     "session": event.get("session"),
                     "timestamp": event.get("timestamp"),
                     "event_type": event.get("eventid"),
-                    "src_ip": event.get("src_ip"),
+                    "src_ip": src_ip,
                     "src_port": event.get("src_port"),
                     "protocol": event.get("protocol"),
                     "username": event.get("username"),
@@ -36,7 +39,8 @@ def parse_logs():
                     "download_url": event.get("url"),
                     "file_hash": event.get("shasum"),
                     "duration_ms": event.get("duration_ms"),
-                    "message": event.get("message")
+                    "message": event.get("message"),
+                    "geolocation": geolocation
                 }
                 
                 parsed_events.append(parsed_event)
@@ -53,6 +57,11 @@ if __name__ == "__main__":
         print(f"[{event['timestamp']}] {event['event_type']}")
         if event['src_ip']:
             print(f"  Source IP: {event['src_ip']}")
+        if event.get('geolocation'):
+            geo = event['geolocation']
+            print(f"  Location: {geo['city']}, {geo['region']}, {geo['country']}")
+            print(f"  ISP: {geo['isp']}")
+            print(f"  Coordinates: {geo['latitude']}, {geo['longitude']}")
         if event['username']:
             print(f"  Login attempt: {event['username']} / {event['password']}")
         if event['command']:
