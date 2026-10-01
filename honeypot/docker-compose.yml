@@ -1,12 +1,8 @@
 services:
-   cowrie:
-      image: cowrie/cowrie:latest
-      container_name: cowrie-honeypot
-      ports:
-        - "2222:2222"
-        - "2223:2223"
-      volumes:
-        - ../data/cowrie-logs:/cowrie/var/log/cowrie
-      restart: unless-stopped
-      environment:
-        - COWRIE_OUTPUT_JSON=true
+  cowrie:
+    build: .
+    container_name: cowrie-honeypot
+    ports:
+      - "2222:2222"
+      - "2223:2223"
+    restart: unless-stopped
