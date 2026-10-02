@@ -5,4 +5,6 @@ services:
     ports:
       - "2222:2222"
       - "2223:2223"
+    volumes:
+      - ../data/honeyfs/root/.bash_history:/cowrie/cowrie-git/honeyfs/root/.bash_history
     restart: unless-stopped
