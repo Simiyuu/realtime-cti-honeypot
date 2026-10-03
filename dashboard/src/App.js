@@ -3,6 +3,7 @@ import axios from 'axios';
 import SummaryCards from './components/SummaryCards';
 import EventFeed from './components/EventFeed';
 import CommandTable from './components/CommandTable';
+import AttackChart from './components/AttackChart';
 import './App.css';
 
 const API_URL = 'http://127.0.0.1:5000';
@@ -59,6 +60,7 @@ function App() {
 
       <main className="main">
         <SummaryCards summary={summary} />
+        <AttackChart events={events} />
         <div className="bottom-grid">
           <EventFeed events={events} />
           <CommandTable events={events} />
