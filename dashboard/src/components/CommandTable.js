@@ -7,10 +7,15 @@ function CommandTable({ events }) {
 
   return (
     <div className="command-table">
-      <h2>Attack Intelligence</h2>
+      <div className="section-header">
+        <h2>Attack Intelligence</h2>
+      </div>
 
       <div className="intel-section">
-        <h3>Commands Executed ({commands.length})</h3>
+        <div className="intel-section-header">
+          <span className="intel-label commands-label">COMMANDS</span>
+          <span className="intel-count">{commands.length} captured</span>
+        </div>
         <table>
           <thead>
             <tr>
@@ -21,7 +26,7 @@ function CommandTable({ events }) {
           </thead>
           <tbody>
             {commands.length === 0 ? (
-              <tr><td colSpan="3">No commands captured yet</td></tr>
+              <tr><td colSpan="3" className="empty-row">No commands captured yet</td></tr>
             ) : (
               commands.map((event, index) => (
                 <tr key={index}>
@@ -36,7 +41,10 @@ function CommandTable({ events }) {
       </div>
 
       <div className="intel-section">
-        <h3>Captured Credentials ({logins.length})</h3>
+        <div className="intel-section-header">
+          <span className="intel-label credentials-label">CREDENTIALS</span>
+          <span className="intel-count">{logins.length} captured</span>
+        </div>
         <table>
           <thead>
             <tr>
@@ -48,14 +56,14 @@ function CommandTable({ events }) {
           </thead>
           <tbody>
             {logins.length === 0 ? (
-              <tr><td colSpan="4">No credentials captured yet</td></tr>
+              <tr><td colSpan="4" className="empty-row">No credentials captured yet</td></tr>
             ) : (
               logins.map((event, index) => (
                 <tr key={index}>
                   <td>{new Date(event.timestamp).toLocaleTimeString()}</td>
                   <td>{event.src_ip}</td>
-                  <td>{event.username}</td>
-                  <td><code>{event.password}</code></td>
+                  <td><code>{event.username}</code></td>
+                  <td><code className="password">{event.password}</code></td>
                 </tr>
               ))
             )}
@@ -64,7 +72,10 @@ function CommandTable({ events }) {
       </div>
 
       <div className="intel-section">
-        <h3>File Downloads ({downloads.length})</h3>
+        <div className="intel-section-header">
+          <span className="intel-label downloads-label">FILE DOWNLOADS</span>
+          <span className="intel-count">{downloads.length} captured</span>
+        </div>
         <table>
           <thead>
             <tr>
@@ -75,7 +86,7 @@ function CommandTable({ events }) {
           </thead>
           <tbody>
             {downloads.length === 0 ? (
-              <tr><td colSpan="3">No downloads captured yet</td></tr>
+              <tr><td colSpan="3" className="empty-row">No downloads captured yet</td></tr>
             ) : (
               downloads.map((event, index) => (
                 <tr key={index}>

@@ -299,3 +299,49 @@ tr:hover td {
   align-items: center;
   margin-bottom: 4px;
 }
+
+.intel-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.intel-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.commands-label {
+  color: #3B82F6;
+  border: 1px solid #3B82F6;
+}
+
+.credentials-label {
+  color: #EF4444;
+  border: 1px solid #EF4444;
+}
+
+.downloads-label {
+  color: #10B981;
+  border: 1px solid #10B981;
+}
+
+.intel-count {
+  font-size: 11px;
+  color: #475569;
+  margin-left: 8px;
+}
+
+.empty-row {
+  color: #475569;
+  font-style: italic;
+  text-align: center;
+}
+
+.password {
+  color: #EF4444;
+}
