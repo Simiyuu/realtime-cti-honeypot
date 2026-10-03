@@ -1,4 +1,5 @@
 from flask import Flask, jsonify
+from flask_cors import CORS
 import sys
 import os
 
@@ -7,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from parser import parse_logs
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/")
 def home():
