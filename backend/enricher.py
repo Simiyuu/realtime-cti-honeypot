@@ -1,6 +1,25 @@
 import requests
+import time
+
+_cache = {}
+FAIL_RETRY_SECONDS = 300
 
 def get_ip_geolocation(ip_address):
+    cached = _cache.get(ip_address)
+    if cached:
+        result, expires = cached
+        if expires is None or time.time() < expires:
+            return result
+
+    result = _lookup_ip(ip_address)
+    failed = result["country"] == "Lookup Failed" or (
+        result["country"] == "Unknown" and not result["is_private"]
+    )
+    expires = time.time() + FAIL_RETRY_SECONDS if failed else None
+    _cache[ip_address] = (result, expires)
+    return result
+
+def _lookup_ip(ip_address):
     
     private_ranges = [
         "127.", "10.", "172.16.", "172.17.", 
@@ -68,7 +87,7 @@ def get_ip_geolocation(ip_address):
 
 if __name__ == "__main__":
     test_ip = "8.8.8.8"
-    result = get_ip_geolocation(test_ip)
+    result = _lookup_ip(test_ip)
     print(f"Geolocation for {test_ip}:")
     for key, value in result.items():
         print(f"  {key}: {value}")
