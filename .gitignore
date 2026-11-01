@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+*.key
+
+*.key
+*.pem
+data/cowrie.json
+data/cowrie-logs/
+*.key
+*.pem
