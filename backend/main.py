@@ -38,6 +38,9 @@ def get_summary():
     logins = [e for e in events if e["event_type"] == "cowrie.login.success"]
     downloads = [e for e in events if e["event_type"] == "cowrie.session.file_download"]
     connections = [e for e in events if e["event_type"] == "cowrie.session.connect"]
+    failed = [e for e in events if e["event_type"] == "cowrie.login.failed"]
+    closed = [e for e in events if e["event_type"] == "cowrie.session.closed"]
+
     
     return jsonify({
         "total_events": len(events),
@@ -45,6 +48,9 @@ def get_summary():
         "successful_logins": len(logins),
         "commands_executed": len(commands),
         "file_downloads": len(downloads),
+        "failed_logins": len(failed),
+        "sessions_closed": len(closed),
+        
         "commands_list": commands,
         "credentials_captured": [
             {

@@ -28,6 +28,12 @@ function SummaryCards({ summary }) {
       label: 'DOWNLOADS',
       color: '#10B981'
     },
+    { 
+      title: 'Failed Logins', value: summary.failed_logins, label: 'FAILED', color: '#F59E0B' 
+    },
+    { 
+      title: 'Sessions Closed', value: summary.sessions_closed, label: 'CLOSED', color: '#64748B'
+    },
     {
       title: 'Total Events',
       value: summary.total_events,
