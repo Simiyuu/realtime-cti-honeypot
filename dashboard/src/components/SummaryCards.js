@@ -29,7 +29,7 @@ function SummaryCards({ summary }) {
       color: '#10B981'
     },
     { 
-      title: 'Failed Logins', value: summary.failed_logins, label: 'FAILED', color: '#F59E0B' 
+      title: 'Failed Logins', value: summary.failed_logins, label: 'FAILED', color: '#EC4899' 
     },
     { 
       title: 'Sessions Closed', value: summary.sessions_closed, label: 'CLOSED', color: '#64748B'
