@@ -16,7 +16,9 @@ function AttackChart({ events }) {
 
     events.forEach(event => {
       const time = new Date(event.timestamp);
-      const timeKey = `${time.getHours()}:${String(time.getMinutes()).padStart(2, '0')}`;
+      const bucketMinute = Math.floor(time.getMinutes() / 5) * 5;
+      const timeKey = `${String(time.getHours()).padStart(2, '0')}:${String(bucketMinute).padStart(2, '0')}`;
+
 
       if (!eventCounts[timeKey]) {
         eventCounts[timeKey] = {
@@ -78,7 +80,7 @@ function AttackChart({ events }) {
       {data.length === 0 ? (
         <p className="no-events">No data to display yet</p>
       ) : (
-        <ResponsiveContainer width="100%" height={250}>
+        <ResponsiveContainer width="100%" height={320}>
           <BarChart
             data={data}
             margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
@@ -98,10 +100,10 @@ function AttackChart({ events }) {
             <Legend
               wrapperStyle={{ fontSize: '11px', color: '#64748b' }}
             />
-            <Bar dataKey="connections" name="Connections" fill="#8B5CF6" radius={[2, 2, 0, 0]} />
-            <Bar dataKey="logins" name="Logins" fill="#EF4444" radius={[2, 2, 0, 0]} />
-            <Bar dataKey="commands" name="Commands" fill="#3B82F6" radius={[2, 2, 0, 0]} />
-            <Bar dataKey="downloads" name="Downloads" fill="#10B981" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="connections" name="Connections" fill="#8B5CF6" radius={[2, 2, 0, 0]} stackId="a"/>
+            <Bar dataKey="logins" name="Logins" fill="#EF4444" radius={[2, 2, 0, 0]} stackId="a"/>
+            <Bar dataKey="commands" name="Commands" fill="#3B82F6" radius={[2, 2, 0, 0]} stackId="a"/>
+            <Bar dataKey="downloads" name="Downloads" fill="#10B981" radius={[2, 2, 0, 0]} stackId="a"/>
           </BarChart>
         </ResponsiveContainer>
       )}
