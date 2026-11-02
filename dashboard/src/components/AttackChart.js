@@ -16,9 +16,8 @@ function AttackChart({ events }) {
 
     events.forEach(event => {
       const time = new Date(event.timestamp);
-      const bucketMinute = Math.floor(time.getMinutes() / 5) * 5;
-      const timeKey = `${String(time.getHours()).padStart(2, '0')}:${String(bucketMinute).padStart(2, '0')}`;
-
+      const timeKey = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+      
 
       if (!eventCounts[timeKey]) {
         eventCounts[timeKey] = {
@@ -87,7 +86,7 @@ function AttackChart({ events }) {
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
             <XAxis
-              dataKey="time"
+              dataKey="time"  minTickGap={50}
               tick={{ fill: '#64748b', fontSize: 11 }}
               axisLine={{ stroke: '#334155' }}
             />
@@ -100,10 +99,10 @@ function AttackChart({ events }) {
             <Legend
               wrapperStyle={{ fontSize: '11px', color: '#64748b' }}
             />
-            <Bar dataKey="connections" name="Connections" fill="#8B5CF6" radius={[2, 2, 0, 0]} stackId="a"/>
-            <Bar dataKey="logins" name="Logins" fill="#EF4444" radius={[2, 2, 0, 0]} stackId="a"/>
-            <Bar dataKey="commands" name="Commands" fill="#3B82F6" radius={[2, 2, 0, 0]} stackId="a"/>
-            <Bar dataKey="downloads" name="Downloads" fill="#10B981" radius={[2, 2, 0, 0]} stackId="a"/>
+            <Bar dataKey="connections" name="Connections" fill="#8B5CF6" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="logins" name="Logins" fill="#EF4444" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="commands" name="Commands" fill="#3B82F6" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="downloads" name="Downloads" fill="#10B981" radius={[2, 2, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       )}
