@@ -1,0 +1,16 @@
+services:
+  cowrie:
+    build: .
+    container_name: cowrie-honeypot
+    ports:
+      - "22:2222"
+      - "23:2223"
+    volumes:
+      - ./cowrie-logs:/cowrie/cowrie-git/var/log/cowrie
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: unless-stopped
+    
