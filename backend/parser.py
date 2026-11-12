@@ -1,7 +1,10 @@
 import json
+from collections import deque
 from enricher import get_ip_geolocation
+from sanitize import mask_ip, mask_password
 
 LOG_FILE = "data/cowrie.json"
+MAX_LINES = 5000
 
 IMPORTANT_EVENTS = [
     "cowrie.session.connect",
@@ -14,58 +17,46 @@ IMPORTANT_EVENTS = [
 
 def parse_logs():
     parsed_events = []
-    
-    with open(LOG_FILE, "r") as f:
-        for line in f:
-            try:
-                event = json.loads(line.strip())
-                
-                if event.get("eventid") not in IMPORTANT_EVENTS:
-                    continue
-                
-                src_ip = event.get("src_ip")
-                geolocation = get_ip_geolocation(src_ip) if src_ip else None
-                
-                parsed_event = {
-                    "session": event.get("session"),
-                    "timestamp": event.get("timestamp"),
-                    "event_type": event.get("eventid"),
-                    "src_ip": src_ip,
-                    "src_port": event.get("src_port"),
-                    "protocol": event.get("protocol"),
-                    "username": event.get("username"),
-                    "password": event.get("password"),
-                    "command": event.get("input"),
-                    "download_url": event.get("url"),
-                    "file_hash": event.get("shasum"),
-                    "duration_ms": event.get("duration_ms"),
-                    "message": event.get("message"),
-                    "geolocation": geolocation
-                }
-                
-                parsed_events.append(parsed_event)
-                
-            except json.JSONDecodeError:
-                continue
-    
+
+    try:
+        with open(LOG_FILE, "r", encoding="utf-8") as f:
+            lines = deque(f, maxlen=MAX_LINES)
+    except FileNotFoundError:
+        return []
+
+    for line in lines:
+        try:
+            event = json.loads(line.strip())
+        except json.JSONDecodeError:
+            continue
+
+        if event.get("eventid") not in IMPORTANT_EVENTS:
+            continue
+
+        src_ip = event.get("src_ip")
+        geolocation = get_ip_geolocation(src_ip) if src_ip else None
+
+        parsed_events.append({
+            "session": event.get("session"),
+            "timestamp": event.get("timestamp"),
+            "event_type": event.get("eventid"),
+            "src_ip": mask_ip(src_ip),
+            "src_port": event.get("src_port"),
+            "protocol": event.get("protocol"),
+            "username": event.get("username"),
+            "password": mask_password(event.get("password")),
+            "command": event.get("input"),
+            "download_url": event.get("url"),
+            "file_hash": event.get("shasum"),
+            "duration_ms": event.get("duration_ms"),
+            "geolocation": geolocation
+        })
+
     return parsed_events
 
 if __name__ == "__main__":
     events = parse_logs()
-    print(f"Total events parsed: {len(events)}\n")
-    for event in events:
-        print(f"[{event['timestamp']}] {event['event_type']}")
-        if event['src_ip']:
-            print(f"  Source IP: {event['src_ip']}")
-        if event.get('geolocation'):
-            geo = event['geolocation']
-            print(f"  Location: {geo['city']}, {geo['region']}, {geo['country']}")
-            print(f"  ISP: {geo['isp']}")
-            print(f"  Coordinates: {geo['latitude']}, {geo['longitude']}")
-        if event['username']:
-            print(f"  Login attempt: {event['username']} / {event['password']}")
-        if event['command']:
-            print(f"  Command: {event['command']}")
-        if event['download_url']:
-            print(f"  Download attempt: {event['download_url']}")
-        print()
+    print(f"Events parsed: {len(events)}")
+    for e in events[:5]:
+        print(e["event_type"], e["src_ip"], e["password"])
+        
