@@ -1,108 +1,117 @@
-from flask import Flask, jsonify
+from dotenv import load_dotenv
+load_dotenv()
+
+import os, sys, datetime
+from functools import wraps
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-import sys
-import os
+import jwt
+from werkzeug.security import check_password_hash
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 from parser import parse_logs
 
 app = Flask(__name__)
 CORS(app)
 
+JWT_SECRET = os.getenv("JWT_SECRET")
+ADMIN_USER = os.getenv("ADMIN_USER")
+ADMIN_HASH = os.getenv("ADMIN_PASSWORD_HASH")
+if not (JWT_SECRET and ADMIN_USER and ADMIN_HASH):
+    raise SystemExit("Missing JWT_SECRET, ADMIN_USER or ADMIN_PASSWORD_HASH in .env")
+
+
+def require_auth(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        header = request.headers.get("Authorization", "")
+        if not header.startswith("Bearer "):
+            return jsonify(error="unauthorized"), 401
+        try:
+            jwt.decode(header[7:], JWT_SECRET, algorithms=["HS256"])
+        except jwt.PyJWTError:
+            return jsonify(error="unauthorized"), 401
+        return f(*args, **kwargs)
+    return wrapper
+
+
 @app.route("/")
 def home():
-    return jsonify({
-        "status": "Honeypot API running",
-        "project": "Real-Time Cyber Threat Intelligence Gathering and Visualization via Honeypot Deployment",
-        "endpoints": [
-            "/api/events - all parsed attack events with geolocation",
-            "/api/summary - attack summary statistics",
-            "/api/attackers - unique attacker IPs and their locations"
-        ]
-    })
+    return jsonify({"status": "Honeypot API running"})
+
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.get_json(silent=True) or {}
+    ok = data.get("username") == ADMIN_USER and check_password_hash(
+        ADMIN_HASH, data.get("password", ""))
+    if not ok:
+        return jsonify(error="invalid credentials"), 401
+    token = jwt.encode(
+        {"sub": ADMIN_USER,
+         "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=8)},
+        JWT_SECRET, algorithm="HS256")
+    return jsonify(token=token)
+
 
 @app.route("/api/events")
+@require_auth
 def get_events():
     events = parse_logs()
-    return jsonify({
-        "total": len(events),
-        "events": events
-    })
+    return jsonify({"total": len(events), "events": events})
+
 
 @app.route("/api/summary")
+@require_auth
 def get_summary():
     events = parse_logs()
-    
     commands = [e["command"] for e in events if e["command"]]
     logins = [e for e in events if e["event_type"] == "cowrie.login.success"]
-    downloads = [e for e in events if e["event_type"] == "cowrie.session.file_download"]
-    connections = [e for e in events if e["event_type"] == "cowrie.session.connect"]
     failed = [e for e in events if e["event_type"] == "cowrie.login.failed"]
     closed = [e for e in events if e["event_type"] == "cowrie.session.closed"]
-
-    
+    downloads = [e for e in events if e["event_type"] == "cowrie.session.file_download"]
+    connections = [e for e in events if e["event_type"] == "cowrie.session.connect"]
     return jsonify({
         "total_events": len(events),
         "total_connections": len(connections),
         "successful_logins": len(logins),
-        "commands_executed": len(commands),
-        "file_downloads": len(downloads),
         "failed_logins": len(failed),
         "sessions_closed": len(closed),
-        
+        "commands_executed": len(commands),
+        "file_downloads": len(downloads),
         "commands_list": commands,
         "credentials_captured": [
-            {
-                "username": e["username"],
-                "password": e["password"]
-            }
-            for e in logins
-        ]
+            {"username": e["username"], "password": e["password"]} for e in logins
+        ],
     })
+
 
 @app.route("/api/attackers")
+@require_auth
 def get_attackers():
     events = parse_logs()
-    
     attackers = {}
-    
-    for event in events:
-        ip = event.get("src_ip")
+    for e in events:
+        ip = e.get("src_ip")
         if not ip:
             continue
-            
-        if ip not in attackers:
-            attackers[ip] = {
-                "ip": ip,
-                "geolocation": event.get("geolocation"),
-                "total_events": 0,
-                "commands": [],
-                "login_attempts": [],
-                "download_attempts": [],
-                "first_seen": event.get("timestamp"),
-                "last_seen": event.get("timestamp")
-            }
-        
-        attackers[ip]["total_events"] += 1
-        attackers[ip]["last_seen"] = event.get("timestamp")
-        
-        if event.get("command"):
-            attackers[ip]["commands"].append(event["command"])
-            
-        if event.get("username"):
-            attackers[ip]["login_attempts"].append({
-                "username": event["username"],
-                "password": event["password"]
-            })
-            
-        if event.get("download_url"):
-            attackers[ip]["download_attempts"].append(event["download_url"])
-    
-    return jsonify({
-        "total_unique_attackers": len(attackers),
-        "attackers": list(attackers.values())
-    })
+        a = attackers.setdefault(ip, {
+            "ip": ip, "geolocation": e.get("geolocation"), "total_events": 0,
+            "commands": [], "login_attempts": [], "download_attempts": [],
+            "first_seen": e["timestamp"], "last_seen": e["timestamp"]})
+        a["total_events"] += 1
+        a["last_seen"] = e["timestamp"]
+        if e.get("command"):
+            a["commands"].append(e["command"])
+        if e.get("username"):
+            a["login_attempts"].append(
+                {"username": e["username"], "password": e["password"]})
+        if e.get("download_url"):
+            a["download_attempts"].append(e["download_url"])
+    return jsonify({"total_unique_attackers": len(attackers),
+                    "attackers": list(attackers.values())})
+
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(host="127.0.0.1", port=5000, debug=False)
+    
