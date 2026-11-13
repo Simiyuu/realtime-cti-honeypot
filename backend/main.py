@@ -9,7 +9,8 @@ import jwt
 from werkzeug.security import check_password_hash
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from parser import parse_logs
+from store import fetch_events, fetch_summary
+
 
 app = Flask(__name__)
 CORS(app)
@@ -57,39 +58,22 @@ def login():
 @app.route("/api/events")
 @require_auth
 def get_events():
-    events = parse_logs()
+    events = fetch_events()
     return jsonify({"total": len(events), "events": events})
+
 
 
 @app.route("/api/summary")
 @require_auth
 def get_summary():
-    events = parse_logs()
-    commands = [e["command"] for e in events if e["command"]]
-    logins = [e for e in events if e["event_type"] == "cowrie.login.success"]
-    failed = [e for e in events if e["event_type"] == "cowrie.login.failed"]
-    closed = [e for e in events if e["event_type"] == "cowrie.session.closed"]
-    downloads = [e for e in events if e["event_type"] == "cowrie.session.file_download"]
-    connections = [e for e in events if e["event_type"] == "cowrie.session.connect"]
-    return jsonify({
-        "total_events": len(events),
-        "total_connections": len(connections),
-        "successful_logins": len(logins),
-        "failed_logins": len(failed),
-        "sessions_closed": len(closed),
-        "commands_executed": len(commands),
-        "file_downloads": len(downloads),
-        "commands_list": commands,
-        "credentials_captured": [
-            {"username": e["username"], "password": e["password"]} for e in logins
-        ],
-    })
+    return jsonify(fetch_summary())
+
 
 
 @app.route("/api/attackers")
 @require_auth
 def get_attackers():
-    events = parse_logs()
+    events = fetch_events()
     attackers = {}
     for e in events:
         ip = e.get("src_ip")
