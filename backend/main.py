@@ -9,11 +9,41 @@ import jwt
 from werkzeug.security import check_password_hash
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from store import fetch_events, fetch_summary
+import threading, time
+from flask_socketio import SocketIO
+from store import fetch_events, fetch_summary, fetch_events_after, fetch_max_id
+
 
 
 app = Flask(__name__)
 CORS(app)
+
+socketio = SocketIO(app, cors_allowed_origins=["http://localhost:3000"], async_mode="threading")
+
+
+@socketio.on("connect")
+def on_connect(auth):
+    token = (auth or {}).get("token", "")
+    try:
+        jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return False
+
+
+def push_loop():
+    last_id = None
+    while True:
+        time.sleep(2)
+        try:
+            if last_id is None:
+                last_id = fetch_max_id()
+            new = fetch_events_after(last_id)
+            if new:
+                last_id = new[-1]["id"]
+                socketio.emit("update", {"events": new, "summary": fetch_summary()})
+        except Exception as e:
+            print("push error:", e)
+
 
 JWT_SECRET = os.getenv("JWT_SECRET")
 ADMIN_USER = os.getenv("ADMIN_USER")
@@ -97,5 +127,7 @@ def get_attackers():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    socketio.start_background_task(push_loop)
+    socketio.run(app, host="127.0.0.1", port=5000, debug=False, allow_unsafe_werkzeug=True)
+
     
