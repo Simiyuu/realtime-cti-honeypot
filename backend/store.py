@@ -9,6 +9,7 @@ def _iso(dt):
 def _to_event(r):
     country = r["country"]
     return {
+         "id": r["id"],
         "session": r["session_id"],
         "timestamp": _iso(r["ts"]),
         "event_type": r["event_type"],
@@ -70,3 +71,23 @@ def fetch_summary():
         "credentials_captured": creds,
     }
 
+def fetch_max_id():
+    conn = get_conn()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COALESCE(MAX(id), 0) FROM events")
+            return cur.fetchone()[0]
+    finally:
+        conn.close()
+
+
+def fetch_events_after(last_id, limit=1000):
+    conn = get_conn()
+    try:
+        with conn.cursor(pymysql.cursors.DictCursor) as cur:
+            cur.execute("SELECT * FROM events WHERE id > %s ORDER BY id ASC LIMIT %s",
+                        (last_id, limit))
+            return [_to_event(r) for r in cur.fetchall()]
+    finally:
+        conn.close()
+        
