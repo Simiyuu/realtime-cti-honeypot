@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import SummaryCards from './components/SummaryCards';
 import EventFeed from './components/EventFeed';
 import CommandTable from './components/CommandTable';
@@ -9,6 +10,7 @@ import Login from './components/Login';
 import './App.css';
 
 const API_URL = 'http://127.0.0.1:5000';
+const MAX_EVENTS = 5000;
 
 function App() {
   const [token, setToken] = useState(sessionStorage.getItem('token'));
@@ -16,6 +18,8 @@ function App() {
   const [events, setEvents] = useState([]);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [connected, setConnected] = useState(false);
+  const maxIdRef = useRef(0);
 
   const logout = useCallback(() => {
     sessionStorage.removeItem('token');
@@ -31,6 +35,7 @@ function App() {
       ]);
       setSummary(s.data);
       setEvents(e.data.events);
+      maxIdRef.current = e.data.events.reduce((m, ev) => Math.max(m, ev.id), 0);
       setLastUpdated(new Date().toLocaleTimeString());
       setError(null);
     } catch (err) {
@@ -42,8 +47,23 @@ function App() {
   useEffect(() => {
     if (!token) return;
     fetchData();
-    const id = setInterval(fetchData, 5000);
-    return () => clearInterval(id);
+    const socket = io(API_URL, { auth: { token }, transports: ['websocket'] });
+    socket.on('connect', () => {
+      setConnected(true);
+      fetchData();
+    });
+    socket.on('disconnect', () => setConnected(false));
+    socket.on('connect_error', () => setConnected(false));
+    socket.on('update', (msg) => {
+      const fresh = msg.events.filter((ev) => ev.id > maxIdRef.current);
+      if (fresh.length) {
+        maxIdRef.current = fresh[fresh.length - 1].id;
+        setEvents((prev) => [...prev, ...fresh].slice(-MAX_EVENTS));
+      }
+      setSummary(msg.summary);
+      setLastUpdated(new Date().toLocaleTimeString());
+    });
+    return () => socket.disconnect();
   }, [token, fetchData]);
 
   const handleLogin = (t) => {
@@ -60,7 +80,10 @@ function App() {
       <header className="header">
         <h1>Real-Time Cyber Threat Intelligence Dashboard</h1>
         <p>Mount Kenya University — Honeypot Monitoring System</p>
-        <span className="last-updated">Last updated: {lastUpdated}</span>
+        <span className="last-updated">
+          Last updated: {lastUpdated} ·{' '}
+          {connected ? 'Live: WebSocket connected' : 'Live feed disconnected, reconnecting'}
+        </span>
         <button onClick={logout} style={{ marginLeft: 12 }}>Sign out</button>
       </header>
       <main className="main">
