@@ -11,8 +11,9 @@ function Login({ apiUrl, onLogin }) {
     try {
       const res = await axios.post(`${apiUrl}/api/login`, { username, password });
       onLogin(res.data.token);
-    } catch {
-      setError('Invalid credentials');
+        } catch (err) {
+      if (err.response && err.response.status === 429) setError('Too many attempts. Try again later.');
+      else setError('Invalid credentials');
     }
   };
 

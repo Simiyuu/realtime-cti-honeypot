@@ -70,19 +70,36 @@ def require_auth(f):
 def home():
     return jsonify({"status": "Honeypot API running"})
 
+FAILS = {}
+MAX_FAILS = 5
+WINDOW = 300
+
+
+def recent_fails(ip):
+    now = time.time()
+    FAILS[ip] = [t for t in FAILS.get(ip, []) if now - t < WINDOW]
+    return FAILS[ip]
 
 @app.route("/api/login", methods=["POST"])
 def login():
+    ip = request.remote_addr
+    fails = recent_fails(ip)
+    if len(fails) >= MAX_FAILS:
+        wait = int(WINDOW - (time.time() - fails[0]))
+        return jsonify(error="too many attempts", retry_after=wait), 429
     data = request.get_json(silent=True) or {}
     ok = data.get("username") == ADMIN_USER and check_password_hash(
         ADMIN_HASH, data.get("password", ""))
     if not ok:
+        fails.append(time.time())
         return jsonify(error="invalid credentials"), 401
+    FAILS.pop(ip, None)
     token = jwt.encode(
         {"sub": ADMIN_USER,
          "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=8)},
         JWT_SECRET, algorithm="HS256")
     return jsonify(token=token)
+
 
 
 @app.route("/api/events")
