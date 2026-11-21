@@ -225,3 +225,4 @@ data/cowrie.json
 data/cowrie-logs/
 *.key
 *.pem
+data/backup-*.json
