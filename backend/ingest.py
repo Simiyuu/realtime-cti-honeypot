@@ -76,8 +76,12 @@ if __name__ == "__main__":
     elif "--loop" in sys.argv:
         interval = int(sys.argv[sys.argv.index("--loop") + 1])
         while True:
-            ingest_once()
+            try:
+                ingest_once()
+            except Exception as e:
+                print("ingest error:", e)
             time.sleep(interval)
+            
     else:
         ingest_once()
         

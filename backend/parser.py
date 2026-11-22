@@ -2,6 +2,7 @@ import json
 from collections import deque
 from enricher import get_ip_geolocation
 from sanitize import mask_ip, mask_password
+import time
 
 LOG_FILE = "data/cowrie.json"
 MAX_LINES = 5000
@@ -18,11 +19,19 @@ IMPORTANT_EVENTS = [
 def parse_logs():
     parsed_events = []
 
-    try:
-        with open(LOG_FILE, "r", encoding="utf-8") as f:
-            lines = deque(f, maxlen=MAX_LINES)
-    except FileNotFoundError:
+    lines = None
+    for attempt in range(5):
+        try:
+            with open(LOG_FILE, "r", encoding="utf-8") as f:
+                lines = deque(f, maxlen=MAX_LINES)
+            break
+        except FileNotFoundError:
+            return []
+        except PermissionError:
+            time.sleep(1)
+    if lines is None:
         return []
+    
 
     for line in lines:
         try:
