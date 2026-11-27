@@ -226,3 +226,4 @@ data/cowrie-logs/
 *.key
 *.pem
 data/backup-*.json
+scripts/*.bak
